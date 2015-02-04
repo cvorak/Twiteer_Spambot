@@ -1,4 +1,6 @@
 require 'jumpstart_auth'
+require 'bitly'
+
 
 class MicroBlogger
 	attr_reader :client
@@ -43,16 +45,23 @@ class MicroBlogger
 		end
 	end
 
+	# didn't do the friends sort, because I really don't see the point
 	def everyones_last_tweet
-		friends = @client.friends
-		friends.each do |friend|
-			puts "#{friend.screen_name} said..."
-			puts "#{friend.status.source}"
-		puts
+		followers = @client.followers.collect { |follower| @client.user(follower) }
+		followers.each do |follower|
+			puts "#{follower.screen_name} said at #{follower.status.created_at.strftime("%A, %b %d")}..."
+			puts follower.status.text
+			puts
 		end
 	end
 
-
+	def shorten(original_url)
+		Bitly.use_api_version_3
+		bitly = Bitly.new('hungryacademy', 'R_430e9f62250186d2612cca76eee2dbc6')
+		puts "Shortening this URL: #{original_url}"
+		return bitly.shorten(original_url).short_url
+	end
+	
 	def run
 		puts "Welcome to Twitter spambot!"
 		command = ""
@@ -67,6 +76,7 @@ class MicroBlogger
 				when 'dm' then dm(parts[1], parts[2..-1].join(" "))
 				when 'spam' then spam_my_followers(parts[1..-1].join(" "))
 				when 'last' then everyones_last_tweet
+				when 's' then shorten(parts[1])
 				else
 				puts "Sorry, I don't know how to #{command}"
 			end 
